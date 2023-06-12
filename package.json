@@ -1,0 +1,39 @@
+{
+  "name": "chat-bot",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon app.js",
+    "dev": "nodemon bot.js"
+  },
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@woocommerce/woocommerce-rest-api": "^1.0.1",
+    "cors": "^2.8.5",
+    "date-fns": "^2.29.3",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "fluent-ffmpeg": "^2.1.2",
+    "moment": "^2.29.4",
+    "nodemon": "^2.0.22",
+    "openai": "^3.2.1",
+    "pg": "^8.10.0",
+    "pg-hstore": "^2.3.4",
+    "qrcode-terminal": "^0.12.0",
+    "sequelize": "^6.31.0",
+    "whatsapp-web.js": "^1.19.5",
+    "woocommerce-api": "^1.5.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CybertronicEvidence/chat-bot.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CybertronicEvidence/chat-bot/issues"
+  },
+  "homepage": "https://github.com/CybertronicEvidence/chat-bot#readme",
+  "description": ""
+}
