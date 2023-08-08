@@ -1,14 +1,14 @@
 const { Sequelize } = require("sequelize");
 require("dotenv").config()
 
-const { DB_URI } = process.env;
+const { db, db_user, db_pass, db_host } = process.env;
 
-// const sequelize = new Sequelize(db, db_user, db_pass, {
-//     host: db_host,
-//     dialect: "postgres"
-// });
+const sequelize = new Sequelize(db, db_user, db_pass, {
+    host: db_host,
+    dialect: "postgres"
+});
 
-const sequelize = new Sequelize(DB_URI)
+// const sequelize = new Sequelize(DB_URI)
 
 const connectDB = async () => {
     try {
