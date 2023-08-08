@@ -262,4 +262,5 @@ async function generateResponse(userId, input) {
 
 
 // Start client
-client.initialize();
+client.initialize()
+    .then(() => connectDB())
