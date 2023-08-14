@@ -64,7 +64,7 @@ client.on('message', async (msg) => {
     const user = await checkUserRegistration(msg.from);
     if (!user) {
         await registerUser(msg.from);
-        await chat.sendMessage('Welcome to my bot! You have a free 2-minute trial period. Ask me anything!');
+        // await chat.sendMessage('Welcome to my bot! You have a free 2-minute trial period. Ask me anything!');
 
         const user = await User.findOne({
             where: {
@@ -87,7 +87,7 @@ client.on('message', async (msg) => {
                 await user.update({ hasExceededFreeTrialLimit: true });
                 await chat.sendMessage('Your free trial period has expired. Please register a subscription to continue using the bot.');
             }
-        }, 120000); // 2 minutes
+        }, 604800000); // 2 minutes
 
 
     } else {
