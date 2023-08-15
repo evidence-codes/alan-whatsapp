@@ -8,6 +8,7 @@ const User = require("./models/user.model");
 const Subscription = require("./models/subscription.model")
 const Training = require("./models/training.model");
 const Message = require("./models/message.model")
+const schedule = require('node-schedule');
 
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffmpeg = require('fluent-ffmpeg');
@@ -260,6 +261,22 @@ async function generateResponse(userId, input) {
     return completion.data.choices[0].message.content;
 }
 
+// Define a scheduled task that runs every minute
+schedule.scheduleJob('*/1 * * * *', async () => {
+    try {
+        const threeMinutesAgo = new Date(new Date() - 3 * 60 * 1000); // Calculate the time 3 minutes ago
+        await Message.destroy({
+            where: {
+                createdAt: {
+                    [Op.lt]: threeMinutesAgo,
+                },
+            },
+        });
+        console.log('Old messages deleted.');
+    } catch (error) {
+        console.error('Error deleting old messages:', error);
+    }
+});
 
 // Start client
 client.initialize()
