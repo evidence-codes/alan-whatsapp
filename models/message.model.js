@@ -8,6 +8,10 @@ const Message = sequelize.define(
         content: {
             type: DataTypes.TEXT,
             allowNull: false
+        },
+        createdAt: {
+            type: DataTypes.DATE,
+            defaultValue: new Date()
         }
     });
 
