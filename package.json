@@ -15,6 +15,7 @@
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "fluent-ffmpeg": "^2.1.2",
+    "gpt-3-encoder": "^1.1.4",
     "moment": "^2.29.4",
     "node-schedule": "^2.1.1",
     "nodemon": "^2.0.22",

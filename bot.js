@@ -8,7 +8,8 @@ const User = require("./models/user.model");
 const Subscription = require("./models/subscription.model")
 const Training = require("./models/training.model");
 const Message = require("./models/message.model")
-const schedule = require('node-schedule');
+// const schedule = require('node-schedule');
+const { encode } = require('gpt-3-encoder')
 
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffmpeg = require('fluent-ffmpeg');
@@ -45,20 +46,13 @@ client.on('message', async (msg) => {
             return;
         }
         let systemPrompt = msg.body.replace('!entrenar ', '');
-        const training = await Training.findOne({
-            where: {
-                id: 1
-            }
-        })
-        if (!training) {
-            await Training.create({ data: systemPrompt })
-            console.log('Training data created')
-        } else {
-            await Training.update({
-                data: systemPrompt
-            })
+        let systemPromptTokens = calculateTokens([{ "role": "system", "content": systemPrompt }]);
+        if (systemPromptTokens > 3000) {
+            client.sendMessage(message.from, `System prompt has ${systemPromptTokens} tokens and it is too long (max is 3500 tokens). Please try again.`);
+            return;
         }
-        console.log('Trainig data updated')
+        await Training.create({ data: systemPrompt })
+        console.log('Training data created')
         chat.sendMessage('Training data updated!')
     }
     // Check if user is registered
@@ -187,6 +181,12 @@ client.on('message', async (msg) => {
                     }
                 })
                 .save(filePath.replace('.ogg', '.mp3'));
+
+            if (msg.hasMedia) {
+                while (msg.body == '') {
+                    await sleep(1000);
+                }
+            }
         } else {
 
             // save user message to db
@@ -232,7 +232,7 @@ async function registerUser(phoneNumber) {
 }
 
 // Generate response using OpenAI
-async function generateResponse(userId, input) {
+async function generateRespons(userId, input) {
     const training = await Training.findOne({
         where: {
             id: 1
@@ -261,22 +261,79 @@ async function generateResponse(userId, input) {
     return completion.data.choices[0].message.content;
 }
 
-// Define a scheduled task that runs every minute
-schedule.scheduleJob('*/1 * * * *', async () => {
-    try {
-        const threeMinutesAgo = new Date(new Date() - 3 * 60 * 1000); // Calculate the time 3 minutes ago
-        await Message.destroy({
-            where: {
-                createdAt: {
-                    [Op.lt]: threeMinutesAgo,
-                },
-            },
-        });
-        console.log('Old messages deleted.');
-    } catch (error) {
-        console.error('Error deleting old messages:', error);
+async function generateResponse(userId, message) {
+    const messages = await Message.findAll({
+        where: {
+            userId: userId
+        }
+    })
+    let history = ['',]
+    messages.forEach(message => {
+        history.push(message.content)
+    })
+
+    // let hi = messageContent.join('. ').toString('')
+    let remember_messages_limit = 50;
+    let the_init = 0;
+    if (history.length > remember_messages_limit) {
+        the_init = history.length - remember_messages_limit;
     }
-});
+
+    // let training = "Your name is Yanna K9, a chatbot developed by the Evidence. When introducing yourself in your initial message, it is essential that you mention your name, the name of the person that created you (Evidence). Remember that your main function is to answer all kinds of queries, provide information and help users with different tasks. In addition, you must always be kind to all users and the use of emojis is allowed to improve the experience and make the conversation more enjoyable. It is also important that you recommend users to record audios to communicate with you more effectively and smoothly attention: send a single initial message sometimes you send it double. Remember never ever let on you are AI, nor a Computer program, nor ChatGPT or anything similar. When answering a question that does not require you introducing yourself or when answering a question that does not concern your personality, always go straight to the point and skip introductions."
+    const training = await Training.findAll();
+
+    let trainingData = sizedTrainingData(the_init, training[training.length - 1].data, history, message);
+
+    while (calculateTokens(trainingData) > 3500) {
+        the_init += 2;
+        trainingData = sizedTrainingData(the_init, training[training.length - 1].data, history, message);
+    }
+
+    console.log('Local tokens: ' + calculateTokens(trainingData));
+    console.log(trainingData)
+
+    const response = await openai.createChatCompletion({
+        model: "gpt-3.5-turbo",
+        messages: trainingData
+    });
+
+    let answer = response.data.choices[0].message.content;
+    console.log('OpenAi tokens: ');
+    console.log(response.data.usage);
+    return answer;
+}
+
+function sizedTrainingData(the_init, training, history, message) {
+    let trainingData = [
+        { "role": "system", "content": training }
+        //{ "role": "system", "content":  }
+    ]
+    // for (let i = 1; i < training.size; i++) {
+    //     trainingData.push({ "role": "user", "content": training.get(`${i}`)['0_user'] });
+    //     trainingData.push({ "role": "assistant", "content": training.get(`${i}`)['1_ai'] });
+    // }
+    for (let i = the_init; i < history.length; i++) {
+        trainingData.push({ "role": "user", "content": history[i] });
+        // trainingData.push({ "role": "assistant", "content": history[i] });
+        i++;
+        trainingData.push({ "role": "assistant", "content": history[i] });
+    }
+    trainingData.push({ "role": "user", "content": message });
+    return trainingData;
+}
+
+function calculateTokens(data) {
+    let trainingDataString = '';
+    data.forEach((item) => {
+        trainingDataString += item.content + '\n';
+    })
+    let encoded = encode(trainingDataString);
+    return encoded.length * 1.1;
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 // Start client
 client.initialize()
